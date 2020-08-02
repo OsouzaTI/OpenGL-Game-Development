@@ -141,7 +141,9 @@ typedef struct
 
 typedef struct
 {
-
+	
+	char		name[MAX_STRING_SIZE];
+	GLdouble	xyz[3];
 
 
 } MAP_CAMERA;
