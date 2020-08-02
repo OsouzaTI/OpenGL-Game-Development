@@ -1,7 +1,10 @@
 #pragma once
 
-#define MAX_STRING_SIZE		500
 #define MAX_TEXTURE_LAYERS	2
+#define MAX_STRING_SIZE		500
+
+#define VERSION				1
+#define REVISION			0
 
 // Structs
 typedef struct
@@ -144,6 +147,109 @@ typedef struct
 	
 	char		name[MAX_STRING_SIZE];
 	GLdouble	xyz[3];
+	GLfloat		algle[3];
 
+	GLubyte		select_rgb[3];
 
 } MAP_CAMERA;
+
+typedef struct
+{
+
+	char		name[MAX_STRING_SIZE];
+	GLint		type;
+	GLdouble	xyz[3];
+	GLfloat		angle[3];
+	GLfloat		rgba[4];
+	char		texture_filename[MAX_STRING_SIZE];
+	GLint		texture;
+	GLint		max_inclusions;
+	GLint		*inclusions;
+
+	GLubyte		select_rgb[3];
+
+} MAP_LIGHT;
+
+typedef struct
+{//TODO: ambição pra compor mais tipos de entidades
+
+	GLint		type;
+	GLdouble	xyz[3];
+	GLfloat		angle[3];
+
+	GLint		health;
+	GLint		strength;
+	GLint		armour;
+
+	GLubyte		select_rbg[3];
+
+} MAP_ENTITY;
+
+typedef struct
+{
+
+	GLint		type;
+	GLint		respawn_wait;
+	GLint		respawn_time;
+	GLdouble	xyz[3];
+
+	GLubyte		select_rgb[3];
+
+} MAP_ITEM;
+
+typedef struct
+{
+
+	char		filename[MAX_STRING_SIZE];
+	GLint		id;
+	GLdouble	xyz[3];
+	GLfloat		angle[3];
+
+	GLubyte		select_rgb[3];
+
+} MAP_SOUND;
+
+class MAP {
+
+	public:
+
+		MAP_VERSION version;
+		MAP_HEADER	header;
+		MAP_SKYBOX	skybox;
+		MAP_FOG		fog;
+		MAP_DETAILS details;
+
+		MAP_OBJECT	*object;
+		MAP_ENTITY	*entity;
+		MAP_LIGHT	*light;
+		MAP_SOUND	*sound;
+		MAP_ITEM	*item;
+
+		 MAP();
+		~MAP();
+
+};
+
+MAP::MAP()
+{
+
+	version.version	 = VERSION;
+	version.revision = REVISION;
+
+	memset(&header,  0, sizeof(header));
+	memset(&details, 0, sizeof(details));
+	memset(&skybox,  0, sizeof(skybox));
+	memset(&fog,	 0, sizeof(fog));
+
+	object	= NULL;
+	entity	= NULL;
+	light	= NULL;
+	sound	= NULL;
+	item	= NULL;
+
+}
+
+MAP::~MAP()
+{
+
+}
