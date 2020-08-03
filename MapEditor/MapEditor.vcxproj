@@ -139,7 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="devlogs.txt" />
+    <Text Include="Logs\devlogs.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="janela.aps" />
@@ -150,11 +150,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MapEditor.cpp" />
-    <ClCompile Include="RASTER.cpp" />
+    <ClCompile Include="Win32\RASTER.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MapFormat.h" />
-    <ClInclude Include="RASTER.h" />
+    <ClInclude Include="Map\MapFormat.h" />
+    <ClInclude Include="Win32\RASTER.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

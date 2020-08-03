@@ -3,8 +3,8 @@
 #include <windows.h>
 #include <stdio.h>
 
-#include "RASTER.h"
-#include "MapFormat.h"
+#include "Win32/RASTER.h"
+#include "Map/MapFormat.h"
 
 #include "resource.h"
 
@@ -597,7 +597,7 @@ COORDS ComputeMouseCoords(long xPos, long yPos)
 {
 
 	COORDS coords;
-	RECT rect;
+	RECT rectRender;
 
 	float window_width;
 	float window_height;
@@ -608,11 +608,11 @@ COORDS ComputeMouseCoords(long xPos, long yPos)
 	coords.mouse_x = xPos;
 	coords.mouse_y = yPos;
 
-	GetWindowRect(RenderWindow, &rect);
+	GetWindowRect(RenderWindow, &rectRender);
 
-	window_width	= (float)(rect.right - rect.left);
-	window_height	= (float)(rect.bottom - rect.top);
-	window_start_x	= (float)(coords.mouse_x - rect.left);
+	window_width	= (float)(rectRender.right - rectRender.left);
+	window_height	= (float)(rectRender.bottom - rectRender.top);
+	window_start_x	= (float)(coords.mouse_x - rectRender.left);
 	window_start_y	= (float)(coords.mouse_y);
 
 	coords.world_x =  (window_start_x / window_width) * 2.0 - 1.0;
