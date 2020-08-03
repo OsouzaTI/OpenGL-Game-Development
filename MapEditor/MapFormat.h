@@ -429,18 +429,18 @@ bool MAP::ColorExists(GLubyte r, GLubyte g, GLubyte b)
 }
 
 void MAP::InsertObject(
-	char* name,
+	char *name,
 	GLint type,
-	GLint special = 0,
-	GLboolean is_collidable = true,
-	GLboolean is_visible = true
+	GLint special,
+	GLboolean is_collidable,
+	GLboolean is_visible
 )
 {
 	MAP_OBJECT new_object;
 	long rgb = GenerateColor();
 
-	if (name != NULL) strcpy(new_object.name, name);
-	else strcpy(new_object.name, "Unknown");
+	if (name != NULL) strcpy_s(new_object.name, name);
+	else strcpy_s(new_object.name, "Unknown");
 
 	new_object.type				= type;
 	new_object.special			= special;
@@ -470,7 +470,7 @@ void MAP::InsertObject(
 		for (long i = 0; i < header.max_objects; i++)
 		{
 
-			strcpy(temp[i].name, object[i].name);
+			strcpy_s(temp[i].name, object[i].name);
 			temp[i].type			= object[i].type;
 			temp[i].special			= object[i].is_collidable;
 			temp[i].is_collidable	= object[i].is_collidable;
@@ -553,7 +553,7 @@ void MAP::InsertObject(
 		for (long i = 0; i < header.max_objects; i++)
 		{
 
-			strcpy(object[i].name, temp[i].name);
+			strcpy_s(object[i].name, temp[i].name);
 			object[i].type				= temp[i].type;
 			object[i].special			= temp[i].special;
 			object[i].is_collidable		= temp[i].is_collidable;
