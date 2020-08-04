@@ -65,6 +65,12 @@ BEGIN
     BEGIN
         MENUITEM "D&etails",                    ID_MAP_DETAILS
     END
+    POPUP "&Layers"
+    BEGIN
+        MENUITEM "&Floor",                      ID_LAYERS_FLOOR, CHECKED
+        MENUITEM "&Ceiling",                    ID_LAYERS_CEILING, CHECKED
+        MENUITEM "&Wall",                       ID_LAYERS_WALL, CHECKED
+    END
 END
 
 IDR_MENU2 MENU

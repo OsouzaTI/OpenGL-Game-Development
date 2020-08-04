@@ -305,8 +305,8 @@ long MAP::GenerateColor()
 	r = rand() % 256;
 	g = rand() % 256;
 	b = rand() % 256;
-
-	while (!ColorExists(r, g, b))
+	//TODO: Whats hell , por que isso tinha um operador de negação
+	while (ColorExists(r, g, b))
 	{
 		r = rand() % 256;
 		g = rand() % 256;
@@ -425,6 +425,8 @@ bool MAP::ColorExists(GLubyte r, GLubyte g, GLubyte b)
 		}
 
 	}
+
+	return (false);
 
 }
 
@@ -662,6 +664,7 @@ bool MAP::VertexColorExists(long obj, GLubyte r, GLubyte g, GLubyte b)
 			return (true);
 		}
 	}
+
 	return (false);
 }
 
@@ -669,16 +672,17 @@ bool MAP::VertexColorExists(long obj, GLubyte r, GLubyte g, GLubyte b)
 long MAP::GenerateVertexColor(long obj)
 {
 	GLubyte r, g, b;
-	r = rand() % 255;
-	g = rand() % 255;
-	b = rand() % 255;
+	r = rand() % 256;
+	g = rand() % 256;
+	b = rand() % 256;
 
 	while (VertexColorExists(obj, r, g, b))
 	{
-		r = rand() % 255;
-		g = rand() % 255;
-		b = rand() % 255;
+		r = rand() % 256;
+		g = rand() % 256;
+		b = rand() % 256;
 	}
+	
 	return (RGB(r, g, b));
 }
 
@@ -796,7 +800,7 @@ bool MAP::InsertTriangle(
 	}
 	else {
 
-		MAP_TRIANGLE* temp = new MAP_TRIANGLE[object[obj].max_triangles];
+		MAP_TRIANGLE* temp = new MAP_TRIANGLE[object[obj].max_triangles+1];
 
 		for (long i = 0; i < object[obj].max_triangles; i++)
 		{
@@ -818,6 +822,9 @@ bool MAP::InsertTriangle(
 		temp = NULL;
 
 	}
+
+	object[obj].triangle[object[obj].max_triangles] = new_triangle;
+	object[obj].max_triangles++;
 
 	return (true);
 
