@@ -283,6 +283,15 @@ class MAP {
 			long armour
 		);
 
+		bool InsertItem(
+			GLdouble x,
+			GLdouble y,
+			GLdouble z,
+			GLint	type,
+			GLint	respawn_wait,
+			GLint	respawn_time
+		);
+
 };
 
 MAP::MAP()
@@ -908,5 +917,65 @@ void MAP::InsertEntity(
 
 	//  Desafio : Implementar esta merdita
 	// pagina 179 livro traduzido
+
+}
+
+bool MAP::InsertItem(
+	GLdouble x,
+	GLdouble y,
+	GLdouble z,
+	GLint	type,
+	GLint	respawn_wait,
+	GLint	respawn_time
+)
+{
+
+	MAP_ITEM new_item;
+
+	long rgb = GenerateColor();
+
+	new_item.select_rgb[0] = GetRValue(rgb);
+	new_item.select_rgb[1] = GetGValue(rgb);
+	new_item.select_rgb[2] = GetBValue(rgb);
+
+	new_item.xyz[0] = x;
+	new_item.xyz[1] = y;
+	new_item.xyz[2] = z;
+
+	new_item.type = type;
+	new_item.respawn_time = respawn_time;
+	new_item.respawn_wait = respawn_wait;
+
+	if (header.max_items == 0) {
+		item = new MAP_ITEM[header.max_items + 1];
+	}
+	else {
+
+		MAP_ITEM* temp; // = new MAP_ITEM[header.max_items + 2];
+		temp = new MAP_ITEM[header.max_items + 1];
+
+		for (long i = 0; i < header.max_items; i++)
+		{
+
+			temp[i] = item[i];
+
+		}
+
+		delete[] item;
+		item = new MAP_ITEM[header.max_items + 2];
+
+		for (long i = 0; i < header.max_items; i++)
+		{
+			item[i] = temp[i];
+		}
+
+		delete[] temp;
+
+	}
+
+	item[header.max_items] = new_item;
+	header.max_items++;
+
+	return (true);
 
 }
