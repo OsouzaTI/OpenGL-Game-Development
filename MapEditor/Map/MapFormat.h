@@ -270,7 +270,7 @@ class MAP {
 			GLfloat v3
 		);
 		
-		void InsertEntity(
+		bool InsertEntity(
 			long type,
 			GLdouble x,
 			GLdouble y,
@@ -290,6 +290,30 @@ class MAP {
 			GLint	type,
 			GLint	respawn_wait,
 			GLint	respawn_time
+		);
+
+		bool InsertSound(
+			GLdouble x,
+			GLdouble y,
+			GLdouble z,
+			char *fileName,
+			GLfloat xa = 0.0f,
+			GLfloat ya = 0.0f,
+			GLfloat za = 0.0f
+		);
+
+		bool InsertLight(
+			char *name,
+			char *fileName,
+			GLdouble x,
+			GLdouble y,
+			GLdouble z,
+			GLfloat xa = 0.0f,
+			GLfloat ya = 0.0f,
+			GLfloat za = 0.0f,
+			GLfloat r = 1.0f,
+			GLfloat g = 1.0f,
+			GLfloat b = 1.0f
 		);
 
 };
@@ -900,23 +924,73 @@ bool MAP::InsertTriangle(
 
 }
 
-void MAP::InsertEntity(
+bool MAP::InsertEntity(
 	long type,
 	GLdouble x,
 	GLdouble y,
 	GLdouble z,
-	GLfloat a1,
-	GLfloat a2,
-	GLfloat a3,
+	GLfloat xa,
+	GLfloat ya,
+	GLfloat za,
 	long health,
 	long strenght,
 	long armour
 )
 {
-	//noth
+	
+	MAP_ENTITY new_entity;
 
-	//  Desafio : Implementar esta merdita
-	// pagina 179 livro traduzido
+	long rgb = GenerateColor();
+
+	new_entity.type = type;
+	
+	new_entity.select_rbg[0] = GetRValue(rgb);
+	new_entity.select_rbg[1] = GetGValue(rgb);
+	new_entity.select_rbg[2] = GetBValue(rgb);
+
+	new_entity.angle[0] = xa;
+	new_entity.angle[1] = ya;
+	new_entity.angle[2] = za;
+
+	new_entity.xyz[0] = x;
+	new_entity.xyz[1] = y;
+	new_entity.xyz[2] = z;
+
+	new_entity.health = health;
+	new_entity.armour = armour;
+	new_entity.strength = strenght;
+
+	if (header.max_entities == 0) {
+		entity = new MAP_ENTITY[header.max_entities + 1];
+	}
+	else
+	{
+		MAP_ENTITY* temp;
+		temp = new MAP_ENTITY[header.max_entities + 1];
+
+		for (long i = 0; i < header.max_entities; i++)
+		{
+			temp[i] = entity[i];
+		}
+
+		delete[] entity;
+
+		entity = new MAP_ENTITY[header.max_entities + 2];
+
+		for (long i = 0; i < header.max_entities; i++)
+		{
+			entity[i] = temp[i];
+		}
+
+		delete[] temp;
+		temp = NULL;
+
+	}
+
+	entity[header.max_entities] = new_entity;
+	header.max_entities++;
+
+	return (true);
 
 }
 
@@ -975,6 +1049,219 @@ bool MAP::InsertItem(
 
 	item[header.max_items] = new_item;
 	header.max_items++;
+
+	return (true);
+
+}
+
+bool MAP::InsertSound(
+	GLdouble x,
+	GLdouble y,
+	GLdouble z,
+	char *fileName,
+	GLfloat xa,
+	GLfloat ya,
+	GLfloat za
+)
+{
+
+	MAP_SOUND new_sound;
+
+	long rgb;
+
+	rgb = GenerateColor();
+
+	new_sound.select_rgb[0] = GetRValue(rgb);
+	new_sound.select_rgb[1] = GetGValue(rgb);
+	new_sound.select_rgb[2] = GetBValue(rgb);
+	
+	new_sound.id = 0;
+	
+	strcpy_s(new_sound.filename, fileName);
+	
+	new_sound.xyz[0] = x;
+	new_sound.xyz[1] = y;
+	new_sound.xyz[2] = z;
+
+	new_sound.angle[0] = xa;
+	new_sound.angle[1] = ya;
+	new_sound.angle[2] = za;
+
+
+	if (header.max_sounds == 0)
+	{
+		sound = new MAP_SOUND[header.max_sounds + 1];
+	}
+	else
+	{
+
+		MAP_SOUND* temp;
+
+		temp = new MAP_SOUND[header.max_sounds + 1];
+
+		for (long i = 0; i < header.max_sounds; i++)
+		{
+
+			temp[i] = sound[i];
+
+		}
+
+		delete[] sound;
+		sound = new MAP_SOUND[header.max_sounds + 2];
+
+		for (long i = 0; i < header.max_sounds; i++)
+		{
+			sound[i] = temp[i];
+		}
+
+		delete[] temp;
+		temp = NULL;
+
+	}
+
+	sound[header.max_sounds] = new_sound;
+	header.max_sounds++;
+
+	return (true);
+
+}
+
+
+bool MAP::InsertLight(
+	char* name,
+	char* fileName,
+	GLdouble x,
+	GLdouble y,
+	GLdouble z,
+	GLfloat xa,
+	GLfloat ya,
+	GLfloat za,
+	GLfloat r,
+	GLfloat g,
+	GLfloat b
+)
+{
+
+	MAP_LIGHT new_light;
+	long rgb;
+
+	rgb = GenerateColor();
+
+	strcpy_s(new_light.name, name);
+	new_light.select_rgb[0] = GetRValue(rgb);
+	new_light.select_rgb[1] = GetGValue(rgb);
+	new_light.select_rgb[2] = GetBValue(rgb);
+	new_light.angle[0] = xa;
+	new_light.angle[0] = ya;
+	new_light.angle[0] = za;
+	new_light.rgba[0] = r;
+	new_light.rgba[1] = g;
+	new_light.rgba[2] = b;
+	new_light.rgba[3] = 1.0f;
+	new_light.inclusions = NULL;
+	new_light.max_inclusions = 0;
+	new_light.texture = 0;
+	strcpy_s(new_light.texture_filename, fileName);
+	new_light.type = 0;
+	new_light.xyz[0] = x;
+	new_light.xyz[1] = y;
+	new_light.xyz[2] = z;
+
+	if (header.max_lights == 0) {
+		light = new MAP_LIGHT[header.max_lights + 1];
+	}
+	else {
+
+		MAP_LIGHT* temp;
+		temp = new MAP_LIGHT[header.max_lights + 1];
+
+		for (long i = 0; i < header.max_lights; i++)
+		{
+
+			temp[i].angle[0] = light[i].angle[0];
+			temp[i].angle[1] = light[i].angle[1];
+			temp[i].angle[2] = light[i].angle[2];
+
+			temp[i].max_inclusions = light[i].max_inclusions;
+			if (temp[i].max_inclusions > 0)
+			{
+				temp[i].inclusions = new GLint[temp[i].max_inclusions + 1];
+				for (long j = 0; j < temp[i].max_inclusions; j++)
+				{
+					temp[i].inclusions[j] = light[i].inclusions[j];
+				}
+
+				delete[] light[i].inclusions;
+
+			}
+			else temp[i].inclusions = NULL;
+
+			strcpy_s(temp[i].name, light[i].name);
+			temp[i].rgba[0] = light[i].rgba[0];
+			temp[i].rgba[1] = light[i].rgba[1];
+			temp[i].rgba[2] = light[i].rgba[2];
+			temp[i].rgba[3] = light[i].rgba[3];
+			strcpy_s(temp[i].texture_filename, light[i].texture_filename);
+			temp[i].type = light[i].type;
+			temp[i].xyz[0] = light[i].xyz[0];
+			temp[i].xyz[1] = light[i].xyz[1];
+			temp[i].xyz[2] = light[i].xyz[2];
+			temp[i].select_rgb[0] = light[i].select_rgb[0];
+			temp[i].select_rgb[1] = light[i].select_rgb[1];
+			temp[i].select_rgb[2] = light[i].select_rgb[2];
+
+		}
+
+		delete[] light;
+
+		light = new MAP_LIGHT[header.max_lights + 2];
+
+		for (long i = 0; i < header.max_lights; i++)
+		{
+
+			light[i].angle[0] = temp[i].angle[0];
+			light[i].angle[1] = temp[i].angle[1];
+			light[i].angle[2] = temp[i].angle[2];
+
+			light[i].max_inclusions = temp[i].max_inclusions;
+
+			if (light[i].max_inclusions > 0)
+			{
+
+				for (long j = 0; j < light[i].max_inclusions; j++)
+				{
+					light[i].inclusions[j] = temp[i].inclusions[j];
+				}
+
+				delete[] temp[i].inclusions;
+
+			}
+			else light[i].inclusions = NULL;
+
+			strcpy_s(light[i].name, temp[i].name);
+			light[i].rgba[0] = temp[i].rgba[0];
+			light[i].rgba[1] = temp[i].rgba[1];
+			light[i].rgba[2] = temp[i].rgba[2];
+			light[i].rgba[3] = temp[i].rgba[3];
+			light[i].texture = temp[i].texture;
+			strcpy_s(light[i].texture_filename, temp[i].texture_filename);
+			light[i].type = temp[i].type;
+			light[i].xyz[0] = temp[i].xyz[0];
+			light[i].xyz[1] = temp[i].xyz[1];
+			light[i].xyz[2] = temp[i].xyz[2];
+			light[i].select_rgb[0] = temp[i].select_rgb[0];
+			light[i].select_rgb[1] = temp[i].select_rgb[1];
+			light[i].select_rgb[2] = temp[i].select_rgb[2];
+
+		}
+
+		delete[] temp;
+		temp = NULL;
+
+	}
+
+	light[header.max_lights] = new_light;
+	header.max_lights++;
 
 	return (true);
 

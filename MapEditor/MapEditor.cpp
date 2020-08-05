@@ -36,7 +36,9 @@ enum {
 	ITEM_START_POSITION,
 	ITEM_DM_POSITION,
 	ITEM_ENTITY,
-	ITEM
+	ITEM,
+	SOUND,
+	LIGHT
 };
 
 enum {
@@ -78,6 +80,9 @@ typedef struct
 	bool draw_wall;
 	bool draw_entity;
 	bool draw_item;
+	bool draw_sound;
+	bool draw_light;
+	
 
 } LAYER;
 
@@ -100,6 +105,8 @@ HWND			bPlaceStartPosition;
 HWND			bPlaceDMPosition;
 HWND			bInsertEntity;
 HWND			bInsertItem;
+HWND			bInsertSound;
+HWND			bInsertLight;
 RASTER			raster;
 CREATION_COORDS creation_coords;
 MAP				*map = new MAP;
@@ -182,6 +189,9 @@ void DrawSolid();
 void DrawStartPosition();
 void DrawDeathMatchPositions();
 void DrawEntities();
+void DrawItem();
+void DrawSound();
+void DrawLight();
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevious, LPSTR lpCmdString, int CmdShow) {
 	// Definition the GlobalInstance with hInstance of Window Main	
@@ -333,6 +343,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevious, LPSTR lpCmdString, 
 		NULL,
 		hInstance, NULL);
 
+	bInsertSound = CreateWindow(
+		L"BUTTON",
+		L"Insert Sound",
+		WS_CHILD | WS_VISIBLE,
+		0, 100 + DEFAULT_BUTTON_HEIGHT * 14,
+		DEFAULT_BUTTON_WIDTH,
+		DEFAULT_BUTTON_HEIGHT,
+		Window,
+		NULL,
+		hInstance, NULL);
+	
+	bInsertLight = CreateWindow(
+		L"BUTTON",
+		L"Insert Light",
+		WS_CHILD | WS_VISIBLE,
+		0, 100 + DEFAULT_BUTTON_HEIGHT * 16,
+		DEFAULT_BUTTON_WIDTH,
+		DEFAULT_BUTTON_HEIGHT,
+		Window,
+		NULL,
+		hInstance, NULL);
+
 	//the Menu varible datatype HWND is the menu window
 	Menu = LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MENU1));
 	SetMenu(Window, Menu); // set menu window in window context
@@ -372,6 +404,135 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevious, LPSTR lpCmdString, 
 }
 
 // Functions aux to WinMain
+LRESULT CALLBACK InsertLightDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	wchar_t temp[500];
+
+	switch (msg)
+	{
+	case WM_INITDIALOG:
+	{
+		SetDlgItemText(hWnd, IDC_INSERT_LIGHT_R, L"255");
+		SetDlgItemText(hWnd, IDC_INSERT_LIGHT_G, L"255");
+		SetDlgItemText(hWnd, IDC_INSERT_LIGHT_B, L"255");
+		SetDlgItemText(hWnd, IDC_INSERT_LIGHT_XA, L"0");
+		SetDlgItemText(hWnd, IDC_INSERT_LIGHT_YA, L"0");
+		SetDlgItemText(hWnd, IDC_INSERT_LIGHT_ZA, L"0");
+
+		swprintf_s(temp, 500, L"%f", creation_coords.start.world_x);
+		SetDlgItemText(hWnd, IDC_INSERT_LIGHT_X, temp);
+		
+		SetDlgItemText(hWnd, IDC_INSERT_LIGHT_Y, L"0.0");
+		
+		swprintf_s(temp, 500, L"%f", creation_coords.start.world_z);
+		SetDlgItemText(hWnd, IDC_INSERT_LIGHT_Z, temp);
+
+	}break;
+	case WM_COMMAND:
+	{
+		if (wParam == IDCANCEL) EndDialog(hWnd, 0);
+		else if (wParam == IDOK)
+		{
+
+			wchar_t temp[500];
+
+			GLfloat r;
+			GLfloat g;
+			GLfloat b;
+			GLfloat xa;
+			GLfloat ya;
+			GLfloat za;
+			GLfloat x;
+			GLfloat y;
+			GLfloat z;
+			
+			//RGB
+			GetDlgItemText(hWnd, IDC_INSERT_LIGHT_R, temp, 500);
+			swscanf_s(temp, L"%f", &r);
+			r = r / 255.0f;
+			
+			GetDlgItemText(hWnd, IDC_INSERT_LIGHT_G, temp, 500);
+			swscanf_s(temp, L"%f", &g);
+			g = g / 255.0f;
+			
+			GetDlgItemText(hWnd, IDC_INSERT_LIGHT_B, temp, 500);
+			swscanf_s(temp, L"%f", &b);
+			b = b / 255.0f;
+			//XA
+			GetDlgItemText(hWnd, IDC_INSERT_LIGHT_XA, temp, 500);
+			swscanf_s(temp, L"%f", &xa);
+			
+			GetDlgItemText(hWnd, IDC_INSERT_LIGHT_YA, temp, 500);
+			swscanf_s(temp, L"%f", &ya);
+			
+			GetDlgItemText(hWnd, IDC_INSERT_LIGHT_ZA, temp, 500);
+			swscanf_s(temp, L"%f", &za);
+
+			//X
+			GetDlgItemText(hWnd, IDC_INSERT_LIGHT_X, temp, 500);
+			swscanf_s(temp, L"%f", &x);
+
+			GetDlgItemText(hWnd, IDC_INSERT_LIGHT_Y, temp, 500);
+			swscanf_s(temp, L"%f", &y);
+
+			GetDlgItemText(hWnd, IDC_INSERT_LIGHT_Z, temp, 500);
+			swscanf_s(temp, L"%f", &z);
+
+			swprintf_s(temp, 500, L"Light #%i", map->header.max_lights);
+			map->InsertLight((char*)temp, (char*)"lightmap.bmp", x, y, z, xa, ya, za, r, g, b);
+
+			EndDialog(hWnd, 1);
+		}
+	}break;
+	default:
+		break;
+	}
+	
+	return (0);
+}
+
+LRESULT CALLBACK InsertSoundDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+
+	switch (msg)
+	{
+	case WM_INITDIALOG:
+	{
+		SetDlgItemText(hWnd, IDC_INSERTSOUND_FILENAME, L"my_sound.wav");
+	}break;
+	case WM_COMMAND:
+	{
+		if (wParam == IDCANCEL) EndDialog(hWnd, 0);
+		else if (wParam == IDOK)
+		{
+			
+			char temp[500];
+			GetDlgItemText(hWnd, IDC_INSERTSOUND_FILENAME, (LPWSTR)temp, 500);			
+			
+			wchar_t teste[500];
+			
+
+			bool b = map->InsertSound(
+				creation_coords.start.world_x,
+				creation_coords.start.world_y,
+				creation_coords.start.world_z,
+				temp
+			);
+
+			swprintf_s(teste, 500, L"%i", b);
+			//MessageBox(hWnd, teste, L"Sounds", MB_OK);
+
+			EndDialog(hWnd, 1);
+
+		}
+	}break;
+	default:
+		break;
+	}
+	
+	return (0);
+}
+
 LRESULT CALLBACK InsertItemDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 
@@ -430,7 +591,7 @@ LRESULT CALLBACK InsertEntityDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 	case WM_INITDIALOG:
 	{
 		SendDlgItemMessage(hWnd, IDC_INSERT_ENTITY_TYPE, CB_RESETCONTENT, 0, 0);
-		
+		SendDlgItemMessage(hWnd, IDC_INSERT_ENTITY_TYPE, CB_ADDSTRING, 0, (LPARAM)L"Joe");
 		SetDlgItemText(hWnd, IDC_INSERT_ENTITY_HEALTH,		L"100");
 		SetDlgItemText(hWnd, IDC_INSERT_ENTITY_STRENGHT,	L"10");
 		SetDlgItemText(hWnd, IDC_INSERT_ENTITY_ARMOUR,		L"0");
@@ -653,6 +814,14 @@ void WMCommand(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		creation_coords.type = ITEM;
 		ShowSelectedButton();
 	}
+	else if (lParam == (LPARAM)bInsertSound) {			
+		creation_coords.type = SOUND;
+		ShowSelectedButton();
+	}
+	else if (lParam == (LPARAM)bInsertLight) {			
+		creation_coords.type = LIGHT;
+		ShowSelectedButton();
+	}
 	else if (wParam == ID_FILE_EXIT) PostQuitMessage(0);
 	else if (wParam == ID_DRAWING_WIREFRAME)
 	{
@@ -719,6 +888,26 @@ void WMCommand(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			CheckMenuItem(Menu, ID_LAYERS_ITEM, MF_CHECKED);
 		}
 		layer.draw_item = !layer.draw_item;
+	}
+	else if (wParam == ID_LAYERS_SOUND)
+	{
+		if (layer.draw_sound) {
+			CheckMenuItem(Menu, ID_LAYERS_SOUND, MF_UNCHECKED);
+		}
+		else {
+			CheckMenuItem(Menu, ID_LAYERS_SOUND, MF_CHECKED);
+		}
+		layer.draw_sound = !layer.draw_sound;
+	}
+	else if (wParam == ID_LAYERS_LIGHT)
+	{
+		if (layer.draw_light) {
+			CheckMenuItem(Menu, ID_LAYERS_LIGHT, MF_UNCHECKED);
+		}
+		else {
+			CheckMenuItem(Menu, ID_LAYERS_LIGHT, MF_CHECKED);
+		}
+		layer.draw_light = !layer.draw_light;
 	}
 	else if (wParam == ID_POPUP_MOVE)
 		MessageBox(Window, L"Move", L"Click", MB_OK);
@@ -932,6 +1121,18 @@ void WMLButtonUp(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			DialogBox(GlobalInstance, MAKEINTRESOURCE(IDD_INSERT_ITEM), NULL, (DLGPROC)InsertItemDlgProc);
 
 		}
+		else if (creation_coords.type == SOUND)
+		{
+	
+			DialogBox(GlobalInstance, MAKEINTRESOURCE(IDD_INSERT_SOUND), NULL, (DLGPROC)InsertSoundDlgProc);
+
+		}
+		else if (creation_coords.type == LIGHT)
+		{
+	
+			DialogBox(GlobalInstance, MAKEINTRESOURCE(IDD_INSERT_LIGHT), NULL, (DLGPROC)InsertLightDlgProc);
+
+		}
 		
 		memset(&creation_coords.start, 0, sizeof(creation_coords.start));
 		memset(&creation_coords.finish, 0, sizeof(creation_coords.finish));
@@ -1009,6 +1210,8 @@ void ShowSelectedButton()
 	SetWindowText(bPlaceDMPosition,		L"Place DM");
 	SetWindowText(bInsertEntity,		L"Insert Entity");
 	SetWindowText(bInsertItem,		L"Insert Item");
+	SetWindowText(bInsertSound,		L"Insert Sound");
+	SetWindowText(bInsertLight,		L"Insert Light");
 
 	switch (creation_coords.type)
 	{
@@ -1033,6 +1236,12 @@ void ShowSelectedButton()
 		case ITEM:
 			SetWindowText(bInsertItem, L"* Insert Item *");
 			break;
+		case SOUND:
+			SetWindowText(bInsertSound, L"* Insert Sound *");
+			break;
+		case LIGHT:
+			SetWindowText(bInsertLight, L"* Insert Light *");
+			break;
 		default:
 			break;
 	}
@@ -1054,9 +1263,14 @@ void Render()
 	glLoadIdentity();
 	glPushMatrix();
 		glTranslatef(0.0f, 0.0f, 0.0f);
+
 		DrawStartPosition();
 		DrawDeathMatchPositions();
 		DrawEntities();
+		DrawItem();
+		DrawSound();
+		DrawLight();
+
 		if (config.draw_mode == DRAW_MODE_WIREFRAME) {
 			DrawWireframe();
 		}
@@ -1276,66 +1490,137 @@ void DrawDeathMatchPositions()
 
 void DrawEntities()
 {
-
-	glColor3f(0.0f, 1.0f, 1.0f);
-	glBegin(GL_QUADS);
-
-	for (long i = 0; i < map->header.max_entities; i++)
+	if (layer.draw_entity)
 	{
+		glColor3f(0.0f, 1.0f, 1.0f);
+		glBegin(GL_QUADS);
 
-		glVertex2d(
-			map->entity[i].xyz[0],
-			map->entity[i].xyz[2]-0.01f
-		);
-		glVertex2d(
-			map->entity[i].xyz[0]+0.01f,
-			map->entity[i].xyz[2]
-		);
-		glVertex2d(
-			map->entity[i].xyz[0],
-			map->entity[i].xyz[2] + 0.01
-		);
-		glVertex2d(
-			map->entity[i].xyz[0] - 0.01f,
-			map->entity[i].xyz[2]
-		);
+		for (long i = 0; i < map->header.max_entities; i++)
+		{
 
+			glVertex2d(
+				map->entity[i].xyz[0],
+				map->entity[i].xyz[2] - 0.01f
+			);
+			glVertex2d(
+				map->entity[i].xyz[0] + 0.01f,
+				map->entity[i].xyz[2]
+			);
+			glVertex2d(
+				map->entity[i].xyz[0],
+				map->entity[i].xyz[2] + 0.01
+			);
+			glVertex2d(
+				map->entity[i].xyz[0] - 0.01f,
+				map->entity[i].xyz[2]
+			);
+
+		}
+
+		glEnd();
+		glColor3f(1.0f, 1.0f, 1.0f);
 	}
-
-	glEnd();
-	glColor3f(1.0f, 1.0f, 1.0f);
-
 }
 
 void DrawItem() {
 
-	glColor3f(1.0f, 1.0f, 0.0f);
-	glBegin(GL_QUADS);
-		
-	for (long i = 0; i < map->header.max_items; i++)
+	if (layer.draw_item)
 	{
+		glColor3f(1.0f, 1.0f, 0.0f);
+		glBegin(GL_QUADS);
 
-		glVertex2d(
-			map->item[i].xyz[0],
-			map->item[i].xyz[2] - 0.01f
-		);
-		glVertex2d(
-			map->item[i].xyz[0] + 0.01f,
-			map->item[i].xyz[2]
-		);
-		glVertex2d(
-			map->item[i].xyz[0],
-			map->item[i].xyz[2] + 0.01
-		);
-		glVertex2d(
-			map->item[i].xyz[0] - 0.01f,
-			map->item[i].xyz[2]
-		);
+		for (long i = 0; i < map->header.max_items; i++)
+		{
 
+			glVertex2d(
+				map->item[i].xyz[0],
+				map->item[i].xyz[2] - 0.01f
+			);
+			glVertex2d(
+				map->item[i].xyz[0] + 0.01f,
+				map->item[i].xyz[2]
+			);
+			glVertex2d(
+				map->item[i].xyz[0],
+				map->item[i].xyz[2] + 0.01
+			);
+			glVertex2d(
+				map->item[i].xyz[0] - 0.01f,
+				map->item[i].xyz[2]
+			);
+
+		}
+
+		glEnd();
+		glColor3f(1.0f, 1.0f, 1.0f);
 	}
-
-	glEnd();
-	glColor3f(1.0f, 1.0f, 1.0f);
 }
 
+void DrawSound()
+{
+	if (layer.draw_sound) {
+		glColor3f(0.0f, 1.0f, 0.0f);
+		glBegin(GL_QUADS);
+
+		for (long i = 0; i < map->header.max_sounds; i++)
+		{
+
+			glVertex2d(
+				map->sound[i].xyz[0],
+				map->sound[i].xyz[2] - 0.01f
+			);
+			glVertex2d(
+				map->sound[i].xyz[0] + 0.01f,
+				map->sound[i].xyz[2]
+			);
+			glVertex2d(
+				map->sound[i].xyz[0],
+				map->sound[i].xyz[2] + 0.01
+			);
+			glVertex2d(
+				map->sound[i].xyz[0] - 0.01f,
+				map->sound[i].xyz[2]
+			);
+
+		}
+
+		glEnd();
+		glColor3f(1.0f, 1.0f, 1.0f);
+	}
+}
+
+void DrawLight()
+{
+
+	if (layer.draw_light) {
+		glColor3f(0.5f, 1.0f, 0.0f);
+		glBegin(GL_QUADS);
+
+		for (long i = 0; i < map->header.max_lights; i++)
+		{
+
+			glVertex2d(
+				map->light[i].xyz[0],
+				map->light[i].xyz[2] - 0.01f
+			);
+			glVertex2d(
+				map->light[i].xyz[0] + 0.01f,
+				map->light[i].xyz[2]
+			);
+			glVertex2d(
+				map->light[i].xyz[0],
+				map->light[i].xyz[2] + 0.01
+			);
+			glVertex2d(
+				map->light[i].xyz[0] - 0.01f,
+				map->light[i].xyz[2]
+			);
+
+		}
+
+		glEnd();
+		glColor3f(1.0f, 1.0f, 1.0f);
+	}
+
+}
 // END 
