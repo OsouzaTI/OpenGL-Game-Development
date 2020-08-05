@@ -270,6 +270,19 @@ class MAP {
 			GLfloat v3
 		);
 		
+		void InsertEntity(
+			long type,
+			GLdouble x,
+			GLdouble y,
+			GLdouble z,
+			GLfloat a1,
+			GLfloat a2,
+			GLfloat a3,
+			long health,
+			long strenght,
+			long armour
+		);
+
 };
 
 MAP::MAP()
@@ -294,8 +307,53 @@ MAP::MAP()
 
 MAP::~MAP()
 {
-	//pagina 133 livro original
-	//pagina 99 livro traduzido
+	if (header.max_objects > 0) { 
+		for (long i = 0; i < header.max_objects; i++) {
+			if (object[i].max_vertices > 0) {
+				delete[] object[i].vertex; object[i].vertex = NULL;
+				object[i].max_vertices = 0; 
+			}
+			
+			if (object[i].max_triangles > 0) {
+				delete[] object[i].triangle; object[i].triangle = NULL;
+				object[i].max_triangles = 0; 
+			}
+			if (object[i].max_textures > 0) {
+				delete[] object[i].texture;
+				object[i].texture = NULL;
+				object[i].max_textures = 0;
+			}
+		}
+		delete[] object;
+		object = NULL;
+		header.max_objects = 0;
+	}
+	
+	if (header.max_cameras > 0) {
+		delete[] camera;
+		camera = NULL;
+		header.max_cameras = 0; 
+	}
+		
+	if (header.max_entities > 0) { 
+		delete[] entity; entity = NULL;
+		header.max_entities = 0;
+	}
+	if (header.max_items > 0) {
+		delete[] item;
+		item = NULL;
+		header.max_items = 0; 
+	}
+	if (header.max_sounds > 0) { 
+		delete[] sound;
+		sound = NULL;
+		header.max_sounds = 0;
+	}
+	if (header.max_lights > 0) { 
+		delete[] light;
+		light = NULL; 
+		header.max_lights = 0;
+	}
 }
 
 long MAP::GenerateColor()
@@ -772,8 +830,8 @@ bool MAP::InsertTriangle(
 	GLfloat v2,
 	GLfloat u3,
 	GLfloat v3
-) {
-
+)
+{
 	MAP_TRIANGLE new_triangle;
 
 	if (obj > header.max_objects) return (false);
@@ -830,5 +888,25 @@ bool MAP::InsertTriangle(
 
 	//livro traduzido	pg 121
 	//livro normal		pg 163
+
+}
+
+void MAP::InsertEntity(
+	long type,
+	GLdouble x,
+	GLdouble y,
+	GLdouble z,
+	GLfloat a1,
+	GLfloat a2,
+	GLfloat a3,
+	long health,
+	long strenght,
+	long armour
+)
+{
+	//noth
+
+	//  Desafio : Implementar esta merdita
+	// pagina 179 livro traduzido
 
 }

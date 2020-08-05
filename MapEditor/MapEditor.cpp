@@ -34,6 +34,8 @@ enum {
 	OBJECTTYPE_FLOOR,
 	OBJECTTYPE_CEILING,
 	ITEM_START_POSITION,
+	ITEM_DM_POSITION,
+	ITEM_ENTITY, // PAGINA 174 livro traduzido
 };
 
 enum {
@@ -73,6 +75,7 @@ typedef struct
 	bool draw_floor;
 	bool draw_ceiling;
 	bool draw_wall;
+	bool draw_entity;
 
 } LAYER;
 
@@ -92,6 +95,8 @@ HWND			bCreateFloor;
 HWND			bCreateCeiling;
 HWND			RenderWindow;
 HWND			bPlaceStartPosition;
+HWND			bPlaceDMPosition;
+HWND			bInsertEntity;
 RASTER			raster;
 CREATION_COORDS creation_coords;
 MAP				*map = new MAP;
@@ -171,6 +176,8 @@ void Render();
 
 void DrawWireframe();
 void DrawSolid();
+void DrawStartPosition();
+void DrawDeathMatchPositions();
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevious, LPSTR lpCmdString, int CmdShow) {
 	// Definition the GlobalInstance with hInstance of Window Main	
@@ -289,6 +296,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevious, LPSTR lpCmdString, 
 		NULL,
 		hInstance, NULL);
 
+	bPlaceDMPosition = CreateWindow(
+		L"BUTTON",
+		L"Place DM",
+		WS_CHILD | WS_VISIBLE,
+		0, 100 + DEFAULT_BUTTON_HEIGHT * 8,
+		DEFAULT_BUTTON_WIDTH,
+		DEFAULT_BUTTON_HEIGHT,
+		Window,
+		NULL,
+		hInstance, NULL);
+
+	bInsertEntity = CreateWindow(
+		L"BUTTON",
+		L"Insert Entity",
+		WS_CHILD | WS_VISIBLE,
+		0, 100 + DEFAULT_BUTTON_HEIGHT * 10,
+		DEFAULT_BUTTON_WIDTH,
+		DEFAULT_BUTTON_HEIGHT,
+		Window,
+		NULL,
+		hInstance, NULL);
+
 	//the Menu varible datatype HWND is the menu window
 	Menu = LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MENU1));
 	SetMenu(Window, Menu); // set menu window in window context
@@ -328,6 +357,94 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevious, LPSTR lpCmdString, 
 }
 
 // Functions aux to WinMain
+LRESULT CALLBACK InsertEntityDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+
+	switch (msg)
+	{
+	case WM_INITDIALOG:
+	{
+		SendDlgItemMessage(hWnd, IDC_INSERT_ENTITY_TYPE, CB_RESETCONTENT, 0, 0);
+		SendDlgItemMessage(hWnd, IDC_INSERT_ENTITY_TYPE, CB_ADDSTRING, 0, (LPARAM)L"Joe");
+		SetDlgItemText(hWnd, IDC_INSERT_ENTITY_HEALTH,		L"100");
+		SetDlgItemText(hWnd, IDC_INSERT_ENTITY_STRENGHT,	L"10");
+		SetDlgItemText(hWnd, IDC_INSERT_ENTITY_ARMOUR,		L"0");
+	}break;
+	case WM_COMMAND:
+	{
+		if (wParam == IDCANCEL) EndDialog(hWnd, 0);
+		else if (wParam == IDOK)
+		{
+
+			long type;
+			long health;
+			long strenght;
+			long armour;
+			wchar_t temp[500];
+
+			type = SendDlgItemMessage(hWnd, IDC_INSERT_ENTITY_TYPE, CB_GETCURSEL, 0, 0);
+			
+			GetDlgItemText(hWnd, IDC_INSERT_ENTITY_HEALTH, temp, 500);			
+			swscanf_s(temp, L"%i", &health);
+			GetDlgItemText(hWnd, IDC_INSERT_ENTITY_STRENGHT, temp, 500);			
+			swscanf_s(temp, L"%i", &strenght);
+			GetDlgItemText(hWnd, IDC_INSERT_ENTITY_ARMOUR, temp, 500);			
+			swscanf_s(temp, L"%i", &armour);
+
+			
+			map->InsertEntity(
+				type,
+				creation_coords.start.world_x,
+				creation_coords.start.world_y,
+				creation_coords.start.world_z,
+				0,0,0, health, strenght, armour
+			);
+
+			EndDialog(hWnd, 1);
+		}
+	}break;
+	default:
+		break;
+	}
+	
+	return (0);
+}
+
+LRESULT CALLBACK DMPositionDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+
+	switch (msg)
+	{
+	case WM_INITDIALOG:
+	{
+		SendDlgItemMessage(hWnd, IDC_DM_POSITION_TYPE, CB_RESETCONTENT, 0, 0);
+		SendDlgItemMessage(hWnd, IDC_DM_POSITION_TYPE, CB_ADDSTRING, 0, (LPARAM)L"Player 1");
+		SendDlgItemMessage(hWnd, IDC_DM_POSITION_TYPE, CB_ADDSTRING, 0, (LPARAM)L"Player 2");
+		SendDlgItemMessage(hWnd, IDC_DM_POSITION_TYPE, CB_SETCURSEL, 0, 1);
+	}break;
+	case WM_COMMAND:
+	{
+		if (wParam == IDCANCEL) EndDialog(hWnd, 0);
+		else if (wParam == IDOK)
+		{
+
+			long player = SendDlgItemMessage(hWnd, IDC_DM_POSITION_TYPE, CB_GETCURSEL, 0, 0);
+			
+			map->details.deathmatch[player].xyz[0] = creation_coords.start.world_x;
+			map->details.deathmatch[player].xyz[1] = creation_coords.start.world_y;
+			map->details.deathmatch[player].xyz[2] = creation_coords.start.world_z;
+			
+			EndDialog(hWnd, 1);
+
+		}
+	}break;
+	default:
+		break;
+	}
+	
+	return (0);
+}
+
 LRESULT CALLBACK MapDetailsDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	// Tratamento das mensagens eviadas pela janela
 	switch (msg)
@@ -459,6 +576,14 @@ void WMCommand(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		creation_coords.type = ITEM_START_POSITION;
 		ShowSelectedButton();
 	}
+	else if (lParam == (LPARAM)bPlaceDMPosition) {			
+		creation_coords.type = ITEM_DM_POSITION;
+		ShowSelectedButton();
+	}
+	else if (lParam == (LPARAM)bInsertEntity) {			
+		creation_coords.type = ITEM_ENTITY;
+		ShowSelectedButton();
+	}
 	else if (wParam == ID_FILE_EXIT) PostQuitMessage(0);
 	else if (wParam == ID_DRAWING_WIREFRAME)
 	{
@@ -505,6 +630,16 @@ void WMCommand(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			CheckMenuItem(Menu, ID_LAYERS_WALL, MF_CHECKED);
 		}
 		layer.draw_wall = !layer.draw_wall;
+	}
+	else if (wParam == ID_LAYERS_ENTITY)
+	{
+		if (layer.draw_entity) {
+			CheckMenuItem(Menu, ID_LAYERS_ENTITY, MF_UNCHECKED);
+		}
+		else {
+			CheckMenuItem(Menu, ID_LAYERS_ENTITY, MF_CHECKED);
+		}
+		layer.draw_entity = !layer.draw_entity;
 	}
 	else if (wParam == ID_POPUP_MOVE)
 		MessageBox(Window, L"Move", L"Click", MB_OK);
@@ -688,24 +823,36 @@ void WMLButtonUp(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			);
 
 		}
+		else if (creation_coords.type == ITEM_START_POSITION)
+		{
 
+			long rgb = map->GenerateColor();
+			map->details.single_player.select_rgb[0] = GetRValue(rgb);
+			map->details.single_player.select_rgb[1] = GetGValue(rgb);
+			map->details.single_player.select_rgb[2] = GetBValue(rgb);
+
+			map->details.single_player.xyz[0] = creation_coords.start.world_x;
+			map->details.single_player.xyz[1] = creation_coords.start.world_y;
+			map->details.single_player.xyz[2] = creation_coords.start.world_z;
+
+		}
+		else if (creation_coords.type == ITEM_DM_POSITION) {
+
+			DialogBox(GlobalInstance, MAKEINTRESOURCE(IDD_DM_POSITION), NULL, (DLGPROC)DMPositionDlgProc);
+
+		}
+		else if (creation_coords.type == ITEM_ENTITY)
+		{
+	
+			DialogBox(GlobalInstance, MAKEINTRESOURCE(IDD_INSERT_ENTITY), NULL, (DLGPROC)InsertEntityDlgProc);
+
+		}
+		
 		memset(&creation_coords.start, 0, sizeof(creation_coords.start));
 		memset(&creation_coords.finish, 0, sizeof(creation_coords.finish));
 
 	}
-	else if(creation_coords.type == ITEM_START_POSITION)
-	{
-	
-		long rgb = map->GenerateColor();
-		map->details.single_player.select_rgb[0] = GetRValue(rgb);
-		map->details.single_player.select_rgb[1] = GetGValue(rgb);
-		map->details.single_player.select_rgb[2] = GetBValue(rgb);
 
-		map->details.single_player.xyz[0] = creation_coords.start.world_x;
-		map->details.single_player.xyz[1] = creation_coords.start.world_y;
-		map->details.single_player.xyz[2] = creation_coords.start.world_z;
-
-	}
 }
 
 void WMMouseMove(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -770,10 +917,12 @@ void DisplayPopupMenu(long x, long y) {
 
 void ShowSelectedButton()
 {
-	SetWindowText(bCreateWall,		L"Create Wall");
-	SetWindowText(bCreateCeiling,	L"Create Ceiling");
-	SetWindowText(bCreateFloor,		L"Create Floor");
-	SetWindowText(bCreateWall,		L"Place  Start");
+	SetWindowText(bCreateWall,			L"Create Wall");
+	SetWindowText(bCreateCeiling,		L"Create Ceiling");
+	SetWindowText(bCreateFloor,			L"Create Floor");
+	SetWindowText(bPlaceStartPosition,	L"Place Start");
+	SetWindowText(bPlaceDMPosition,		L"Place DM");
+	SetWindowText(bInsertEntity,		L"Insert Entity");
 
 	switch (creation_coords.type)
 	{
@@ -788,6 +937,12 @@ void ShowSelectedButton()
 			break;	
 		case ITEM_START_POSITION:
 			SetWindowText(bPlaceStartPosition, L"* StartPos *");
+			break;
+		case ITEM_DM_POSITION:
+			SetWindowText(bPlaceDMPosition, L"* DM Pos *");
+			break;
+		case ITEM_ENTITY:
+			SetWindowText(bInsertEntity, L"* Insert Entity *");
 			break;
 		default:
 			break;
@@ -810,7 +965,9 @@ void Render()
 	glLoadIdentity();
 	glPushMatrix();
 		glTranslatef(0.0f, 0.0f, 0.0f);
-
+		DrawStartPosition();
+		DrawDeathMatchPositions();
+		DrawEntities();
 		if (config.draw_mode == DRAW_MODE_WIREFRAME) {
 			DrawWireframe();
 		}
@@ -983,3 +1140,82 @@ void DrawStartPosition()
 	/// PAgina 168 livro traduzido
 
 }
+
+void DrawDeathMatchPositions()
+{
+	glColor3f(1.0f, 0.0f, 1.0f);
+	glBegin(GL_QUADS);
+		glVertex2d(
+			map->details.deathmatch[0].xyz[0],
+			map->details.deathmatch[0].xyz[2]-0.01f
+		);
+		glVertex2d(
+			map->details.deathmatch[0].xyz[0]+0.01f,
+			map->details.deathmatch[0].xyz[2]
+		);
+		glVertex2d(
+			map->details.deathmatch[0].xyz[0],
+			map->details.deathmatch[0].xyz[2] + 0.01f
+		);
+		glVertex2d(
+			map->details.deathmatch[0].xyz[0] - 0.01f,
+			map->details.deathmatch[0].xyz[2]
+		);
+
+		glVertex2d(
+			map->details.deathmatch[1].xyz[0],
+			map->details.deathmatch[1].xyz[2]-0.01f
+		);
+		glVertex2d(
+			map->details.deathmatch[1].xyz[0]+0.01f,
+			map->details.deathmatch[1].xyz[2]
+		);
+		glVertex2d(
+			map->details.deathmatch[1].xyz[0],
+			map->details.deathmatch[1].xyz[2] + 0.01f
+		);
+		glVertex2d(
+			map->details.deathmatch[1].xyz[0] - 0.01f,
+			map->details.deathmatch[1].xyz[2]
+		);
+	glEnd();
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+	/// PAgina 168 livro traduzido
+
+}
+
+void DrawEntities()
+{
+
+	glColor3f(0.0f, 1.0f, 1.0f);
+	glBegin(GL_QUADS);
+
+	for (long i = 0; i < map->header.max_entities; i++)
+	{
+
+		glVertex2d(
+			map->entity[i].xyz[0],
+			map->entity[i].xyz[2]-0.01f
+		);
+		glVertex2d(
+			map->entity[i].xyz[0]+0.01f,
+			map->entity[i].xyz[2]
+		);
+		glVertex2d(
+			map->entity[i].xyz[0],
+			map->entity[i].xyz[2] + 0.01
+		);
+		glVertex2d(
+			map->entity[i].xyz[0] - 0.01f,
+			map->entity[i].xyz[2]
+		);
+
+	}
+
+	glEnd();
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+}
+
+// END 

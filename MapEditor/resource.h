@@ -5,12 +5,20 @@
 #define IDR_MENU1                       101
 #define IDR_MENU2                       103
 #define IDD_MAP_DETAILS                 106
+#define IDD_DM_POSITION                 112
+#define IDD_INSERT_ENTITY               114
 #define IDC_INKEDIT1                    1001
 #define IDC_MAP_DETAILS_NAME            1004
 #define IDC_MAP_DETAILS_LEVEL_TYPE      1005
 #define IDC_MAP_DETAILS_LEVEL_RULES     1006
 #define IDC_OK                          1010
 #define IDC_CANCEL                      1011
+#define IDC_DM_POSITION_TYPE            1012
+#define IDC_INSERT_ENTITY_TYPE          1013
+#define IDC_INSERT_ENTITY_HEALTH        1014
+#define IDC_INSERT_ENTITY_STRENGHT      1015
+#define IDC_EDIT3                       1016
+#define IDC_INSERT_ENTITY_ARMOUR        1016
 #define ID_FILE_EXIT                    40001
 #define ID_DRAWING_WIREFRAME            40002
 #define ID_DRAWING_SOLID                40003
@@ -22,14 +30,15 @@
 #define ID_LAYERS_FLOOR                 40016
 #define ID_LAYERS_CEILING               40017
 #define ID_LAYERS_WALL                  40018
+#define ID_LAYERS_ENTITY                40019
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        112
-#define _APS_NEXT_COMMAND_VALUE         40019
-#define _APS_NEXT_CONTROL_VALUE         1012
+#define _APS_NEXT_RESOURCE_VALUE        116
+#define _APS_NEXT_COMMAND_VALUE         40020
+#define _APS_NEXT_CONTROL_VALUE         1015
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
