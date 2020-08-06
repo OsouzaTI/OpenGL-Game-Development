@@ -183,7 +183,7 @@ typedef struct
 	GLint		strength;
 	GLint		armour;
 
-	GLubyte		select_rbg[3];
+	GLubyte		select_rgb[3];
 
 } MAP_ENTITY;
 
@@ -440,9 +440,9 @@ bool MAP::ColorExists(GLubyte r, GLubyte g, GLubyte b)
 		for (long i = 0; i < header.max_entities; i++)
 		{
 			if (
-				entity[i].select_rbg[0] == r &&
-				entity[i].select_rbg[1] == g &&
-				entity[i].select_rbg[2] == b
+				entity[i].select_rgb[0] == r &&
+				entity[i].select_rgb[1] == g &&
+				entity[i].select_rgb[2] == b
 			){
 				return (true);
 			}
@@ -944,9 +944,9 @@ bool MAP::InsertEntity(
 
 	new_entity.type = type;
 	
-	new_entity.select_rbg[0] = GetRValue(rgb);
-	new_entity.select_rbg[1] = GetGValue(rgb);
-	new_entity.select_rbg[2] = GetBValue(rgb);
+	new_entity.select_rgb[0] = GetRValue(rgb);
+	new_entity.select_rgb[1] = GetGValue(rgb);
+	new_entity.select_rgb[2] = GetBValue(rgb);
 
 	new_entity.angle[0] = xa;
 	new_entity.angle[1] = ya;
@@ -1266,3 +1266,5 @@ bool MAP::InsertLight(
 	return (true);
 
 }
+
+// Pagina 216 traduzido ////290 livro normal

@@ -46,6 +46,10 @@ enum {
 	DRAW_MODE_SOLID,
 };
 
+enum {
+	MODE_TYPE_MOVE = 0,
+};
+
 /// <summary>
 /// structure created for get and initialize 
 /// the traduction of mouse coordenates of 2d
@@ -107,11 +111,13 @@ HWND			bInsertEntity;
 HWND			bInsertItem;
 HWND			bInsertSound;
 HWND			bInsertLight;
+HWND			bSelectObject;
 RASTER			raster;
 CREATION_COORDS creation_coords;
 MAP				*map = new MAP;
 LAYER			layer;
 CONFIG			config;
+GLubyte			select_rgb[3];
 //-- START TODOS --//
 /*
 	[]	comment the functions	(1/9)
@@ -183,15 +189,17 @@ void SetGLDefaults();
 /// the openGL render
 /// </summary>
 void Render();
-
+void Move();
+void SelectAnObject();
 void DrawWireframe();
 void DrawSolid();
 void DrawStartPosition();
 void DrawDeathMatchPositions();
-void DrawEntities();
-void DrawItem();
-void DrawSound();
-void DrawLight();
+void DrawEntities(bool want_srgb = false);
+void DrawItem(bool want_srgb = false);
+void DrawSound(bool want_srgb = false);
+void DrawLight(bool want_srgb = false);
+void DrawPointMouse();
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevious, LPSTR lpCmdString, int CmdShow) {
 	// Definition the GlobalInstance with hInstance of Window Main	
@@ -251,6 +259,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevious, LPSTR lpCmdString, 
 
 	// if window create failed return program false
 	if (!Window) return 0;
+
+	//ShowCursor(false);
 
 	//this function return a bool, is success the bool is true and
 	//the second parameter of type RECT recieve the object
@@ -364,6 +374,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevious, LPSTR lpCmdString, 
 		Window,
 		NULL,
 		hInstance, NULL);
+	
+	bSelectObject = CreateWindow(
+		L"BUTTON",
+		L"Select Object",
+		WS_CHILD | WS_VISIBLE,
+		0, 100 + DEFAULT_BUTTON_HEIGHT * 18,
+		DEFAULT_BUTTON_WIDTH,
+		DEFAULT_BUTTON_HEIGHT,
+		Window,
+		NULL,
+		hInstance, NULL);
 
 	//the Menu varible datatype HWND is the menu window
 	Menu = LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MENU1));
@@ -372,6 +393,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevious, LPSTR lpCmdString, 
 	PopupMenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MENU2));
 	//try init openGL in RenderWindow
 	if (!raster.Init(RenderWindow)) return 0;
+
+	if (GetDeviceCaps(raster.hDC, BITSPIXEL) < 24)
+		MessageBox(Window, L"This software not work in depth pixel < 24", L"Aviso", MB_OK);
+
 	//resize the GLwindow with the main window resize
 	ResizeGLWindow(rect.right - rect.left, rect.bottom - rect.top);
 	SetGLDefaults();
@@ -822,6 +847,10 @@ void WMCommand(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		creation_coords.type = LIGHT;
 		ShowSelectedButton();
 	}
+	else if (lParam == (LPARAM)bSelectObject) {			
+		creation_coords.type = NULL;
+		ShowSelectedButton();
+	}	
 	else if (wParam == ID_FILE_EXIT) PostQuitMessage(0);
 	else if (wParam == ID_DRAWING_WIREFRAME)
 	{
@@ -910,7 +939,18 @@ void WMCommand(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		layer.draw_light = !layer.draw_light;
 	}
 	else if (wParam == ID_POPUP_MOVE)
-		MessageBox(Window, L"Move", L"Click", MB_OK);
+	{
+		//MessageBox(hWnd, L"OPAAA", L"Erro", MB_OK);
+		if (select_rgb[0] != 255 && select_rgb[1] != 255 && select_rgb[2] != 255)
+		{
+			creation_coords.start = creation_coords.finish;
+			creation_coords.mode = CREATE_MODE_START;
+			creation_coords.type = MODE_TYPE_MOVE;
+		}
+		else {
+			MessageBox(hWnd, L"Um objeto deve ser selecionado", L"Erro", MB_OK);
+		}
+	}
 	else if (wParam == ID_POPUP_DELETE)
 		MessageBox(Window, L"Delete", L"Click", MB_OK);
 	else if (wParam == ID_POPUP_TEXTURE)
@@ -1133,9 +1173,18 @@ void WMLButtonUp(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			DialogBox(GlobalInstance, MAKEINTRESOURCE(IDD_INSERT_LIGHT), NULL, (DLGPROC)InsertLightDlgProc);
 
 		}
+		else if (creation_coords.type == NULL)
+		{	
+			SelectAnObject();
+		}
 		
 		memset(&creation_coords.start, 0, sizeof(creation_coords.start));
 		memset(&creation_coords.finish, 0, sizeof(creation_coords.finish));
+
+	}
+	else if (creation_coords.type == NULL) {
+	
+		SelectAnObject();
 
 	}
 
@@ -1151,32 +1200,37 @@ void WMMouseMove(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	if (creation_coords.mode != CREATE_MODE_NULL)
 	{
 
+		if (creation_coords.type == MODE_TYPE_MOVE)
+		{
+			Move();
+		}
+
 		creation_coords.mode = CREATE_MODE_SIZE;
 		creation_coords.finish = ComputeMouseCoords(LOWORD(lParam), HIWORD(lParam));
 		
-		
-
 		swprintf_s(
 			temp,
 			500,
-			L"Map Editor, Mx=%i My=%i, X=%0.4f Z=%0.4f",
+			L"Map Editor, Mx=%i My=%i, X=%0.4f Z=%0.4f | (R=%i,G=%i,B=%i)",
 			creation_coords.finish.mouse_x, 
 			creation_coords.finish.mouse_y,
 			creation_coords.finish.world_x,
-			creation_coords.finish.world_z
+			creation_coords.finish.world_z,
+			select_rgb[0],
+			select_rgb[1],
+			select_rgb[2]
 		);
-
-
+	
 	}
 	else {
-
+		
 		swprintf_s(
 			temp,
 			500,
-			L"Map Editor, Mx=%i My=%i",
+			L"Map Editor Move Mode, Mx=%i My=%i",
 			LOWORD(lParam), HIWORD(lParam)
 		);
-
+		
 	}
 
 	SetWindowText(Window, temp);
@@ -1243,11 +1297,230 @@ void ShowSelectedButton()
 			SetWindowText(bInsertLight, L"* Insert Light *");
 			break;
 		default:
+			SetWindowText(bSelectObject, L"* Select Object *");
 			break;
 	}
 
 }
 
+void SelectAnObject()
+{
+
+	GLubyte rgb[3];
+	RECT rect;
+	long x;
+	long y;
+	long width;
+	long height;
+	bool found = false;
+
+	memset(&select_rgb, 0xFF, sizeof(select_rgb));
+	GetClientRect(RenderWindow, &rect);
+	width = rect.right - rect.left;
+	height = rect.bottom - rect.top;
+	x = creation_coords.finish.mouse_x - DEFAULT_BUTTON_WIDTH;
+	y = height - creation_coords.finish.mouse_y;
+
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glLineWidth(4.0);
+	DrawSolid();
+	if (layer.draw_entity) DrawEntities(true);
+	if (layer.draw_item) DrawItem(true);
+	glLineWidth(1.0);
+
+	glReadBuffer(GL_BACK);
+	glReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, rgb);
+
+	for (long i = 0; i < map->header.max_objects; i++)
+	{
+		if (
+			(map->object[i].select_rgb[0] == rgb[0]) &&
+			(map->object[i].select_rgb[1] == rgb[1]) &&
+			(map->object[i].select_rgb[2] == rgb[2])
+			) {
+			found = true;			
+		}
+	}
+
+	for (long i = 0; i < map->header.max_entities; i++)
+	{
+		if (
+			(map->entity[i].select_rgb[0] == rgb[0]) &&
+			(map->entity[i].select_rgb[1] == rgb[1]) &&
+			(map->entity[i].select_rgb[2] == rgb[2])
+			) {
+			found = true;			
+		}
+	}
+
+	for (long i = 0; i < map->header.max_items; i++)
+	{
+		if (
+			(map->item[i].select_rgb[0] == rgb[0]) &&
+			(map->item[i].select_rgb[1] == rgb[1]) &&
+			(map->item[i].select_rgb[2] == rgb[2])
+			) {
+			found = true;			
+		}
+	}
+
+	for (long i = 0; i < map->header.max_lights; i++)
+	{
+		if (
+			(map->light[i].select_rgb[0] == rgb[0]) &&
+			(map->light[i].select_rgb[1] == rgb[1]) &&
+			(map->light[i].select_rgb[2] == rgb[2])
+			) {
+			found = true;			
+		}
+	}
+
+	for (long i = 0; i < map->header.max_sounds; i++)
+	{
+		if (
+			(map->sound[i].select_rgb[0] == rgb[0]) &&
+			(map->sound[i].select_rgb[1] == rgb[1]) &&
+			(map->sound[i].select_rgb[2] == rgb[2])
+			) {
+			found = true;			
+		}
+	}
+
+	if (
+		(map->details.single_player.select_rgb[0] == rgb[0]) &&
+		(map->details.single_player.select_rgb[1] == rgb[1]) &&
+		(map->details.single_player.select_rgb[2] == rgb[2]) ||
+
+		(map->details.deathmatch[0].select_rgb[0] == rgb[0]) &&
+		(map->details.deathmatch[0].select_rgb[1] == rgb[1]) &&
+		(map->details.deathmatch[0].select_rgb[2] == rgb[2]) ||
+
+		(map->details.deathmatch[1].select_rgb[0] == rgb[0]) &&
+		(map->details.deathmatch[1].select_rgb[1] == rgb[1]) &&
+		(map->details.deathmatch[1].select_rgb[2] == rgb[2])
+	)
+	{
+		found = true;		
+	}
+
+	if (found) {		
+		select_rgb[0] = rgb[0];
+		select_rgb[1] = rgb[1];
+		select_rgb[2] = rgb[2];
+	}
+
+}
+
+void Move()
+{
+	float x;
+	float z;
+
+	x = (float)(creation_coords.finish.world_x - creation_coords.start.world_x);
+	z = (float)(creation_coords.finish.world_z - creation_coords.start.world_z);
+
+	creation_coords.start = creation_coords.finish;
+
+	if (
+		map->details.single_player.select_rgb[0] == select_rgb[0] &&
+		map->details.single_player.select_rgb[1] == select_rgb[1] &&
+		map->details.single_player.select_rgb[2] == select_rgb[2]
+		) {
+		map->details.single_player.xyz[0] += x;
+		map->details.single_player.xyz[1] += z;
+		return;
+	}
+
+	for (long i = 0; i < 2; i++)
+	{
+		if (
+			map->details.deathmatch[i].select_rgb[0] == select_rgb[0] &&
+			map->details.deathmatch[i].select_rgb[1] == select_rgb[1] &&
+			map->details.deathmatch[i].select_rgb[2] == select_rgb[2]
+			) {
+			map->details.deathmatch[i].xyz[0] += x;
+			map->details.deathmatch[i].xyz[2] += z;
+			return;
+		}
+	}
+
+	for (long i = 0; i < map->header.max_objects; i++)
+	{
+		if (
+			map->object[i].select_rgb[0] == select_rgb[0] &&
+			map->object[i].select_rgb[1] == select_rgb[1] &&
+			map->object[i].select_rgb[2] == select_rgb[2]
+			) {
+			for (long j = 0; j < map->object[i].max_vertices; j++)
+			{
+				map->object[i].vertex[j].xyz[0] += x;
+				map->object[i].vertex[j].xyz[2] += z;
+			}
+			return;
+		}
+	}
+
+	for (long i = 0; i < map->header.max_entities; i++)
+	{
+		if (
+			map->entity[i].select_rgb[0] == select_rgb[0] &&
+			map->entity[i].select_rgb[1] == select_rgb[1] &&
+			map->entity[i].select_rgb[2] == select_rgb[2]
+			) {
+			
+			map->entity[i].xyz[0] += x;
+			map->entity[i].xyz[2] += z;
+
+			return;
+		}
+	}
+
+	for (long i = 0; i < map->header.max_items; i++)
+	{
+		if (
+			map->item[i].select_rgb[0] == select_rgb[0] &&
+			map->item[i].select_rgb[1] == select_rgb[1] &&
+			map->item[i].select_rgb[2] == select_rgb[2]
+			) {
+			
+			map->item[i].xyz[0] += x;
+			map->item[i].xyz[2] += z;
+
+			return;
+		}
+	}
+
+	for (long i = 0; i < map->header.max_sounds; i++)
+	{
+		if (
+			map->sound[i].select_rgb[0] == select_rgb[0] &&
+			map->sound[i].select_rgb[1] == select_rgb[1] &&
+			map->sound[i].select_rgb[2] == select_rgb[2]
+			) {
+			
+			map->sound[i].xyz[0] += x;
+			map->sound[i].xyz[2] += z;
+
+			return;
+		}
+	}
+
+	for (long i = 0; i < map->header.max_lights; i++)
+	{
+		if (
+			map->light[i].select_rgb[0] == select_rgb[0] &&
+			map->light[i].select_rgb[1] == select_rgb[1] &&
+			map->light[i].select_rgb[2] == select_rgb[2]
+			) {
+			
+			map->light[i].xyz[0] += x;
+			map->light[i].xyz[2] += z;
+
+			return;
+		}
+	}
+
+}
 
 // Functions GL -> OpenGL functions
 
@@ -1270,6 +1543,7 @@ void Render()
 		DrawItem();
 		DrawSound();
 		DrawLight();
+		DrawPointMouse();
 
 		if (config.draw_mode == DRAW_MODE_WIREFRAME) {
 			DrawWireframe();
@@ -1488,7 +1762,7 @@ void DrawDeathMatchPositions()
 
 }
 
-void DrawEntities()
+void DrawEntities(bool want_srgb)
 {
 	if (layer.draw_entity)
 	{
@@ -1497,6 +1771,15 @@ void DrawEntities()
 
 		for (long i = 0; i < map->header.max_entities; i++)
 		{
+
+			if (
+				(map->entity[i].select_rgb[0] == select_rgb[0]) &&
+				(map->entity[i].select_rgb[1] == select_rgb[1]) &&
+				(map->entity[i].select_rgb[2] == select_rgb[2])
+				)
+			{
+				glColor3f(1.0f, 0.0f, 0.0f);
+			}
 
 			glVertex2d(
 				map->entity[i].xyz[0],
@@ -1522,7 +1805,7 @@ void DrawEntities()
 	}
 }
 
-void DrawItem() {
+void DrawItem(bool want_srgb) {
 
 	if (layer.draw_item)
 	{
@@ -1556,7 +1839,7 @@ void DrawItem() {
 	}
 }
 
-void DrawSound()
+void DrawSound(bool want_srgb)
 {
 	if (layer.draw_sound) {
 		glColor3f(0.0f, 1.0f, 0.0f);
@@ -1589,7 +1872,7 @@ void DrawSound()
 	}
 }
 
-void DrawLight()
+void DrawLight(bool want_srgb)
 {
 
 	if (layer.draw_light) {
@@ -1623,4 +1906,21 @@ void DrawLight()
 	}
 
 }
+
+void DrawPointMouse()
+{
+	POINT mouse;
+	GetCursorPos(&mouse);
+
+	glColor3f(0.0f, 1.0f, 0.0f);
+	glBegin(GL_POINT);
+		
+		glVertex2d(
+			mouse.x,
+			mouse.y
+		);
+	glEnd();
+
+}
+
 // END 
